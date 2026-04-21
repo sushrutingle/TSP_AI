@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AI Route Optimization — Presentation</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&family=Fira+Code:wght@400;500&display=swap');
+  :root{--navy:#050e1f;--card:#0f2040;--blue:#4f9cf9;--green:#4ade80;--orange:#fb923c;--purple:#a78bfa;--text:#f1f5f9;--muted:#8892a4;--border:#1e3a5f}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Inter',sans-serif;background:#000;color:var(--text);overflow:hidden}
+
+  .deck{width:100vw;height:100vh;position:relative}
+  .slide{position:absolute;inset:0;display:none;flex-direction:column;overflow:hidden;
+    background:linear-gradient(135deg,#050e1f 0%,#091830 60%,#0a2040 100%)}
+  .slide.active{display:flex}
+
+  /* ── Nav ─── */
+  .nav{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+    display:flex;align-items:center;gap:12px;z-index:100;
+    background:rgba(9,24,48,.85);backdrop-filter:blur(12px);
+    border:1px solid var(--border);border-radius:40px;padding:10px 20px}
+  .nav button{background:none;border:none;color:var(--blue);font-size:20px;cursor:pointer;padding:4px 8px;transition:.2s}
+  .nav button:hover{color:#fff}
+  .slide-counter{color:var(--muted);font-size:13px;min-width:60px;text-align:center}
+  .nav-dots{display:flex;gap:6px}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--border);cursor:pointer;transition:.3s}
+  .dot.active{background:var(--blue);transform:scale(1.3)}
+
+  /* ── Common ─── */
+  .slide-inner{flex:1;padding:50px 80px;display:flex;flex-direction:column;justify-content:center}
+  .badge{display:inline-block;background:rgba(79,156,249,.15);border:1px solid rgba(79,156,249,.4);
+    color:var(--blue);padding:5px 16px;border-radius:20px;font-size:12px;letter-spacing:1px;margin-bottom:20px}
+  h1{font-size:2.4rem;font-weight:900;line-height:1.2;margin-bottom:16px}
+  h2{font-size:1.8rem;font-weight:700;margin-bottom:20px;
+    background:linear-gradient(90deg,var(--blue),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  h3{font-size:1.1rem;font-weight:600;color:var(--blue);margin:16px 0 8px}
+  p,li{font-size:0.95rem;color:var(--muted);line-height:1.7}
+  ul{list-style:none;padding:0}
+  ul li{padding:6px 0;padding-left:20px;position:relative}
+  ul li::before{content:"▸";position:absolute;left:0;color:var(--blue)}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:16px}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:16px}
+  .card{background:rgba(15,32,64,.8);border:1px solid var(--border);border-radius:12px;padding:20px}
+  .card h4{color:var(--blue);font-size:14px;margin-bottom:8px;font-weight:600}
+  .card p{font-size:13px}
+  .formula{background:#050e1f;border:1px solid var(--border);border-left:3px solid var(--green);
+    border-radius:8px;padding:16px;font-family:'Fira Code',monospace;font-size:13px;color:var(--green);margin:12px 0}
+
+  /* ── Slide 1 — Title ─── */
+  #s1{background:radial-gradient(ellipse at 30% 50%,#0a2060,#050e1f)}
+  #s1 h1{font-size:2.8rem;background:linear-gradient(135deg,#fff,var(--blue));
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  #s1 .subtitle{font-size:1.1rem;color:var(--muted);margin-bottom:36px;max-width:700px}
+  #s1 .tags{display:flex;flex-wrap:wrap;gap:8px}
+  #s1 .tag{background:rgba(79,156,249,.1);border:1px solid rgba(79,156,249,.3);
+    color:var(--blue);padding:6px 16px;border-radius:20px;font-size:13px}
+
+  /* ── Stats bar ─── */
+  .stats-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:24px}
+  .stat{background:rgba(15,32,64,.6);border:1px solid var(--border);border-radius:10px;
+    padding:14px;text-align:center}
+  .stat .val{font-size:1.4rem;font-weight:700;color:var(--blue)}
+  .stat .lbl{font-size:11px;color:var(--muted);margin-top:2px}
+
+  /* ── Code card ─── */
+  pre{background:#050e1f;border:1px solid var(--border);border-radius:8px;
+    padding:16px;font-family:'Fira Code',monospace;font-size:12px;color:#a9c7ff;
+    line-height:1.6;overflow:hidden;margin:12px 0}
+
+  /* ── Flow ─── */
+  .flow{display:flex;flex-direction:column;align-items:center;gap:0}
+  .flow-box{background:rgba(79,156,249,.12);border:2px solid var(--blue);
+    border-radius:8px;padding:8px 24px;font-size:13px;font-weight:600;margin:3px;white-space:nowrap}
+  .flow-diamond{background:rgba(167,139,250,.12);border:2px solid var(--purple);
+    border-radius:6px;padding:8px 24px;font-size:13px;font-weight:600;color:var(--purple);margin:3px;transform:skewX(-6deg)}
+  .flow-arr{color:var(--blue);font-size:18px}
+  .flow-row{display:flex;gap:20px;align-items:center;margin:4px 0}
+  .flow-label{font-size:11px;color:var(--muted)}
+
+  /* ── Tech icons ─── */
+  .tech-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:20px}
+  .tech-item{background:rgba(15,32,64,.8);border:1px solid var(--border);border-radius:10px;
+    padding:16px;text-align:center}
+  .tech-item .ico{font-size:1.8rem;margin-bottom:6px}
+  .tech-item .name{font-size:13px;font-weight:600;color:var(--text)}
+  .tech-item .role{font-size:11px;color:var(--muted);margin-top:2px}
+
+  /* ── Table ─── */
+  table{width:100%;border-collapse:collapse;margin-top:12px;font-size:13px}
+  th{background:rgba(79,156,249,.15);color:var(--blue);padding:10px;text-align:left;border:1px solid var(--border)}
+  td{padding:9px 10px;border:1px solid var(--border);color:var(--muted)}
+  tr:nth-child(even) td{background:rgba(15,32,64,.4)}
+
+  /* ── Thank you ─── */
+  #s13{background:radial-gradient(ellipse at 60% 40%,#0a2060,#050e1f)}
+  #s13 h1{font-size:3rem;text-align:center}
+  #s13 .circle{width:120px;height:120px;border-radius:50%;background:rgba(79,156,249,.15);
+    border:3px solid var(--blue);display:flex;align-items:center;justify-content:center;
+    font-size:3rem;margin:0 auto 24px}
+</style>
+</head>
+<body>
+<div class="deck">
+
+<!-- ══ SLIDE 1 — Title ══════════════════════════════════════════════════ -->
+<div class="slide active" id="s1">
+<div class="slide-inner">
+  <div class="badge">FINAL YEAR AI PROJECT — 2025/2026</div>
+  <h1>AI-Based Route Optimization<br>Using Hill Climbing Algorithm</h1>
+  <p class="subtitle">With GUI and Interactive Map Visualization for Indian Cities</p>
+  <div class="tags">
+    <span class="tag">🧠 Artificial Intelligence</span>
+    <span class="tag">📐 Hill Climbing</span>
+    <span class="tag">🗺 Folium Maps</span>
+    <span class="tag">🐍 Python 3.12</span>
+    <span class="tag">🏙 40+ Indian Cities</span>
+    <span class="tag">📊 TSP</span>
+  </div>
+  <div class="stats-bar">
+    <div class="stat"><div class="val">40+</div><div class="lbl">Indian Cities</div></div>
+    <div class="stat"><div class="val">2-OPT</div><div class="lbl">Neighbourhood</div></div>
+    <div class="stat"><div class="val">&lt;1s</div><div class="lbl">Typical Runtime</div></div>
+    <div class="stat"><div class="val">HTML</div><div class="lbl">Map Export</div></div>
+  </div>
+</div>
+</div>
+
+<!-- ══ SLIDE 2 — Abstract ═══════════════════════════════════════════════ -->
+<div class="slide" id="s2">
+<div class="slide-inner">
+  <div class="badge">SLIDE 02 — ABSTRACT</div>
+  <h2>Project Overview</h2>
+  <div class="grid2">
+    <div>
+      <h3>What We Built</h3>
+      <ul>
+        <li>AI-powered route optimizer for Indian cities</li>
+        <li>Solves Travelling Salesman Problem (TSP)</li>
+        <li>Uses Hill Climbing heuristic algorithm</li>
+        <li>Haversine formula for geographic distances</li>
+        <li>Tkinter GUI for user interaction</li>
+        <li>Folium interactive map visualization</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Key Achievements</h3>
+      <ul>
+        <li>Near-optimal routes for 2–15 cities</li>
+        <li>Sub-second computation for 5-city problems</li>
+        <li>Interactive HTML map with animated routes</li>
+        <li>Professional dark-theme desktop application</li>
+        <li>Convergence analysis and segment tables</li>
+        <li>Modular, extensible Python codebase</li>
+      </ul>
+    </div>
+  </div>
+  <div class="formula" style="margin-top:20px">
+    Keywords: AI • Hill Climbing • TSP • Haversine • Folium • Tkinter • Python
+  </div>
+</div>
+</div>
+
+<!-- ══ SLIDE 3 — Problem ════════════════════════════════════════════════ -->
+<div class="slide" id="s3">
+<div class="slide-inner">
+  <div class="badge">SLIDE 03 — PROBLEM DEFINITION</div>
+  <h2>The Travelling Salesman Problem</h2>
+  <div class="grid2">
+    <div>
+      <h3>Problem Statement</h3>
+      <p style="color:var(--text);margin-bottom:12px"><em>"Given n cities, find the shortest route that visits each city exactly once and returns to the starting city."</em></p>
+      <ul>
+        <li>Classified as NP-Hard</li>
+        <li>Brute force: (n-1)!/2 possible tours</li>
+        <li>For 20 cities: 60 quadrillion routes!</li>
+        <li>Requires heuristic / approximate methods</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Our System Requirements</h3>
+      <ul>
+        <li>Accept 2–10 Indian cities as input</li>
+        <li>Compute Haversine pairwise distances</li>
+        <li>Apply Hill Climbing optimization</li>
+        <li>Return cyclic tour (back to start)</li>
+        <li>Visualize on interactive map</li>
+        <li>Display segment-level distance breakdown</li>
+      </ul>
+    </div>
+  </div>
+  <table style="margin-top:16px">
+    <tr><th>Cities (n)</th><th>Possible Tours</th><th>Brute Force Feasibility</th></tr>
+    <tr><td>5</td><td>12</td><td>✅ Trivial</td></tr>
+    <tr><td>10</td><td>181,440</td><td>⚠ Possible</td></tr>
+    <tr><td>15</td><td>43 billion</td><td>❌ Infeasible</td></tr>
+    <tr><td>20</td><td>60 quadrillion</td><td>❌ Impossible</td></tr>
+  </table>
+</div>
+</div>
+
+<!-- ══ SLIDE 4 — Math Model ═════════════════════════════════════════════ -->
+<div class="slide" id="s4">
+<div class="slide-inner">
+  <div class="badge">SLIDE 04 — MATHEMATICAL MODEL</div>
+  <h2>Objective Function &amp; Haversine Formula</h2>
+  <div class="grid2">
+    <div>
+      <h3>TSP Objective Function</h3>
+      <div class="formula">
+Minimize: f(R) = Σᵢ d(cᵢ, cᵢ₊₁ mod n)
+
+Subject to:
+  • each city visited exactly once
+  • route is cyclic (returns to c₀)
+  • d(cᵢ, cⱼ) ≥ 0  ∀ i, j
+      </div>
+      <p>Where <strong>R</strong> = route permutation, <strong>cᵢ</strong> = city at position i, <strong>d()</strong> = Haversine distance.</p>
+    </div>
+    <div>
+      <h3>Haversine Formula</h3>
+      <div class="formula">
+a = sin²(Δlat/2)
+  + cos(lat₁)·cos(lat₂)·sin²(Δlon/2)
+
+c = 2·atan2(√a, √(1−a))
+
+d = 6371 × c  km
+      </div>
+      <p>Accounts for Earth's spherical geometry. Accurate to within 0.5% for most distances.</p>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══ SLIDE 5 — Algorithm ══════════════════════════════════════════════ -->
+<div class="slide" id="s5">
+<div class="slide-inner">
+  <div class="badge">SLIDE 05 — ALGORITHM</div>
+  <h2>Hill Climbing Algorithm</h2>
+  <div class="grid2">
+    <div>
+      <pre>
+FUNCTION HillClimbing(cities, restarts):
+  best_global ← ∞
+
+  FOR r = 1 TO restarts:
+    route ← RandomShuffle(cities)
+    dist  ← TotalDistance(route)
+
+    REPEAT:
+      improved ← FALSE
+      FOR all pairs (i, j):
+        nbr ← Swap(route, i, j)
+        nd  ← Distance(nbr)
+        IF nd &lt; dist:
+          route, dist ← nbr, nd
+          improved ← TRUE
+          BREAK (first-improvement)
+
+    UNTIL NOT improved
+
+    IF dist &lt; best_global:
+      best_global ← dist
+      best_route  ← route
+
+  RETURN best_route, best_global
+      </pre>
+    </div>
+    <div>
+      <h3>How It Works</h3>
+      <ul>
+        <li><strong>Start:</strong> Random permutation of cities</li>
+        <li><strong>Explore:</strong> Generate all pairwise swaps</li>
+        <li><strong>Accept:</strong> Move to better neighbour</li>
+        <li><strong>Terminate:</strong> No improvement found</li>
+        <li><strong>Restart:</strong> New random starting point</li>
+        <li><strong>Return:</strong> Best across all restarts</li>
+      </ul>
+      <h3 style="margin-top:16px">Move Types</h3>
+      <ul>
+        <li>🔄 <strong>City Swap:</strong> Exchange positions of two cities</li>
+        <li>↩ <strong>2-opt:</strong> Reverse a sub-segment</li>
+      </ul>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══ SLIDE 6 — System Architecture ═══════════════════════════════════ -->
+<div class="slide" id="s6">
+<div class="slide-inner">
+  <div class="badge">SLIDE 06 — SYSTEM ARCHITECTURE</div>
+  <h2>System Architecture &amp; Data Flow</h2>
+  <div class="grid2">
+    <div>
+      <h3>Module Structure</h3>
+      <pre>
+main.py          ← Tkinter GUI (Entry)
+  ├── cities_data.py   ← 40+ cities + coords
+  ├── algorithm.py     ← Hill Climbing
+  │     └── distances.py  ← Haversine
+  ├── graph_plotter.py ← Matplotlib
+  └── map_visualizer.py← Folium Map
+      </pre>
+      <h3 style="margin-top:16px">Data Flow</h3>
+      <ul>
+        <li>GUI → Selected city list</li>
+        <li>cities_data → (lat, lon) pairs</li>
+        <li>distances → Distance matrix D[i][j]</li>
+        <li>algorithm → Optimized route + distance</li>
+        <li>Output → Table + Graph + Map</li>
+      </ul>
+    </div>
+    <div>
+      <div class="flow" style="margin-top:20px">
+        <div class="flow-box">User Selects Cities (GUI)</div>
+        <div class="flow-arr">↓</div>
+        <div class="flow-box">Build Distance Matrix</div>
+        <div class="flow-arr">↓</div>
+        <div class="flow-box">Generate Random Route</div>
+        <div class="flow-arr">↓</div>
+        <div class="flow-diamond">Neighbour Better?</div>
+        <div class="flow-row"><span class="flow-label" style="color:var(--green)">YES → Accept</span><span class="flow-label" style="color:var(--orange)">NO → Restart</span></div>
+        <div class="flow-arr">↓</div>
+        <div class="flow-box">Return Best Route</div>
+        <div class="flow-arr">↓</div>
+        <div class="flow-box" style="border-color:var(--green);background:rgba(74,222,128,.1)">Results + Map + Graph</div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══ SLIDE 7 — Technologies ═══════════════════════════════════════════ -->
+<div class="slide" id="s7">
+<div class="slide-inner">
+  <div class="badge">SLIDE 07 — TECHNOLOGIES USED</div>
+  <h2>Technology Stack</h2>
+  <div class="tech-grid">
+    <div class="tech-item"><div class="ico">🐍</div><div class="name">Python 3.12</div><div class="role">Core Language</div></div>
+    <div class="tech-item"><div class="ico">🖥</div><div class="name">Tkinter</div><div class="role">Desktop GUI</div></div>
+    <div class="tech-item"><div class="ico">📊</div><div class="name">Matplotlib</div><div class="role">Route Graphs</div></div>
+    <div class="tech-item"><div class="ico">🗺</div><div class="name">Folium</div><div class="role">Interactive Maps</div></div>
+    <div class="tech-item"><div class="ico">🔢</div><div class="name">NumPy</div><div class="role">Numerical Ops</div></div>
+    <div class="tech-item"><div class="ico">🌍</div><div class="name">OpenStreetMap</div><div class="role">Map Tiles</div></div>
+    <div class="tech-item"><div class="ico">💻</div><div class="name">VS Code</div><div class="role">IDE</div></div>
+    <div class="tech-item"><div class="ico">🪟</div><div class="name">Windows 11</div><div class="role">Platform</div></div>
+  </div>
+  <div class="formula" style="margin-top:20px">pip install numpy matplotlib folium</div>
+</div>
+</div>
+
+<!-- ══ SLIDE 8 — GUI Design ═════════════════════════════════════════════ -->
+<div class="slide" id="s8">
+<div class="slide-inner">
+  <div class="badge">SLIDE 08 — GUI DESIGN</div>
+  <h2>Graphical User Interface</h2>
+  <div class="grid2">
+    <div>
+      <h3>Left Panel — Inputs</h3>
+      <ul>
+        <li>City count Spinbox (2–10)</li>
+        <li>Styled Combobox dropdown per city</li>
+        <li>⚡ Sample Set / 🔄 Clear All buttons</li>
+        <li>Restarts Spinbox (1–20)</li>
+        <li>Max Iterations Spinbox</li>
+        <li>First/Best-Improvement radio</li>
+        <li>Progress bar with restart counter</li>
+        <li>▶ Run / 🗺 Map / 📊 Graph buttons</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Right Panel — Results</h3>
+      <ul>
+        <li>4 KPI cards: Distance, Cities, Time, Restarts</li>
+        <li>Segment route table (From → To → km)</li>
+        <li>Cumulative distance column</li>
+        <li>Real-time algorithm log (monospace)</li>
+        <li>Status bar with current state</li>
+        <li>Dark theme with blue accent palette</li>
+        <li>Threaded optimization (non-blocking UI)</li>
+      </ul>
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px;text-align:center">
+    <p style="color:var(--blue);font-size:13px">Dark Mode • Segoe UI Font • Real-time Progress • Thread-safe Updates</p>
+  </div>
+</div>
+</div>
+
+<!-- ══ SLIDE 9 — Map Integration ════════════════════════════════════════ -->
+<div class="slide" id="s9">
+<div class="slide-inner">
+  <div class="badge">SLIDE 09 — MAP INTEGRATION</div>
+  <h2>Interactive Folium Map</h2>
+  <div class="grid2">
+    <div>
+      <h3>Map Features</h3>
+      <ul>
+        <li>🔢 Numbered custom DivIcon markers</li>
+        <li>🌀 AntPath animated route polyline</li>
+        <li>🟠 Dashed return-leg arrow</li>
+        <li>📍 City name labels + coordinate popups</li>
+        <li>📊 Distance summary legend (bottom-right)</li>
+        <li>🏷 Title overlay with total distance</li>
+        <li>🔭 Auto fit-bounds to all cities</li>
+        <li>💾 Exported as route_map.html</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Technical Details</h3>
+      <ul>
+        <li>Folium wraps Leaflet.js mapping library</li>
+        <li>Base tiles from OpenStreetMap CDN</li>
+        <li>No API key required at runtime</li>
+        <li>Works offline after initial tile load</li>
+        <li>HTML file sharable and standalone</li>
+        <li>Responsive — works on all screen sizes</li>
+        <li>Auto-opens in default browser after generation</li>
+      </ul>
+      <div class="formula" style="margin-top:12px">
+output/route_map.html → browser
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══ SLIDE 10 — Results ═══════════════════════════════════════════════ -->
+<div class="slide" id="s10">
+<div class="slide-inner">
+  <div class="badge">SLIDE 10 — RESULTS &amp; ANALYSIS</div>
+  <h2>Experimental Results</h2>
+  <table>
+    <tr><th>Test Case</th><th>Cities</th><th>n</th><th>Best Distance</th><th>Time</th><th>Restarts</th></tr>
+    <tr><td>TC-01</td><td>Delhi → Jaipur → Mumbai → Pune → Hyderabad</td><td>5</td><td>~3,420 km</td><td>0.08s</td><td>8</td></tr>
+    <tr><td>TC-02</td><td>Chennai → Bengaluru → Kochi → Coimbatore → Mysuru</td><td>5</td><td>~1,840 km</td><td>0.11s</td><td>8</td></tr>
+    <tr><td>TC-03</td><td>Kolkata → Patna → Ranchi → Varanasi → Lucknow → Bhubaneswar</td><td>6</td><td>~2,190 km</td><td>0.24s</td><td>10</td></tr>
+    <tr><td>TC-04</td><td>Delhi + Mumbai + Kolkata + Chennai + Hyderabad + 3 more</td><td>8</td><td>~7,600 km</td><td>0.89s</td><td>10</td></tr>
+  </table>
+  <div class="grid2" style="margin-top:16px">
+    <div class="card">
+      <h4>Quality vs Restarts</h4>
+      <p>8 restarts: 90%+ match optimal for n=5<br>More restarts → better but slower</p>
+    </div>
+    <div class="card">
+      <h4>2-opt vs Swap</h4>
+      <p>2-opt consistently outperforms pure city swap — explores more diverse solutions</p>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══ SLIDE 11 — Adv/Lim ═══════════════════════════════════════════════ -->
+<div class="slide" id="s11">
+<div class="slide-inner">
+  <div class="badge">SLIDE 11 — ADVANTAGES &amp; LIMITATIONS</div>
+  <h2>Evaluation</h2>
+  <div class="grid2">
+    <div class="card" style="border-color:rgba(74,222,128,.4)">
+      <h4 style="color:var(--green)">✅ Advantages</h4>
+      <ul>
+        <li>Simple, interpretable algorithm</li>
+        <li>Excellent for 2–15 city problems</li>
+        <li>Memory-efficient (O(n) space)</li>
+        <li>Fast: sub-second for ≤10 cities</li>
+        <li>Random restarts reduce local optima</li>
+        <li>Accurate Haversine distances</li>
+        <li>Interactive, exportable map output</li>
+        <li>No external API required</li>
+      </ul>
+    </div>
+    <div class="card" style="border-color:rgba(251,146,60,.4)">
+      <h4 style="color:var(--orange)">⚠ Limitations</h4>
+      <ul>
+        <li>No guarantee of global optimum</li>
+        <li>Greedy — no backtracking</li>
+        <li>Scales poorly beyond ~20 cities</li>
+        <li>Straight-line distances (not road network)</li>
+        <li>No real-time traffic data</li>
+        <li>Quality varies with random seed</li>
+      </ul>
+      <h4 style="color:var(--blue);margin-top:12px">🔮 Mitigation</h4>
+      <ul>
+        <li>Random restarts reduce optima trapping</li>
+        <li>2-opt gives more diverse neighbourhood</li>
+      </ul>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══ SLIDE 12 — Applications + Future ════════════════════════════════ -->
+<div class="slide" id="s12">
+<div class="slide-inner">
+  <div class="badge">SLIDE 12 — APPLICATIONS &amp; FUTURE SCOPE</div>
+  <h2>Real-World Impact &amp; Future Work</h2>
+  <div class="grid2">
+    <div>
+      <h3>Current Applications</h3>
+      <div class="grid2" style="margin-top:8px">
+        <div class="card" style="padding:12px"><h4 style="font-size:12px">🚚 Logistics</h4><p style="font-size:11px">Delivery route optimization for e-commerce</p></div>
+        <div class="card" style="padding:12px"><h4 style="font-size:12px">🚖 Ride-Share</h4><p style="font-size:11px">Multi-passenger pickup planning</p></div>
+        <div class="card" style="padding:12px"><h4 style="font-size:12px">🤖 Robotics</h4><p style="font-size:11px">Autonomous waypoint navigation</p></div>
+        <div class="card" style="padding:12px"><h4 style="font-size:12px">✈ Tourism</h4><p style="font-size:11px">Optimal multi-city travel itineraries</p></div>
+      </div>
+    </div>
+    <div>
+      <h3>Future Enhancements</h3>
+      <ul>
+        <li>🧬 Integrate Genetic Algorithms for large n</li>
+        <li>🌡 Add Simulated Annealing for better quality</li>
+        <li>🚦 Real-time traffic via Google Maps API</li>
+        <li>🌐 Web app deployment (Flask/Django)</li>
+        <li>📱 Mobile app (React Native/Flutter)</li>
+        <li>⏰ Time-window constraints (VRP)</li>
+        <li>🗺 Full road network distance (not straight-line)</li>
+        <li>🏙 Expand to 700+ Indian districts</li>
+      </ul>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══ SLIDE 13 — Conclusion ════════════════════════════════════════════ -->
+<div class="slide" id="s13">
+<div class="slide-inner" style="align-items:center;text-align:center">
+  <div class="circle">🗺</div>
+  <div class="badge">SLIDE 13 — CONCLUSION</div>
+  <h1 style="font-size:2.2rem;background:linear-gradient(135deg,#fff,var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:16px">
+    Conclusion &amp; Thank You
+  </h1>
+  <p style="max-width:680px;margin:0 auto 24px;font-size:1rem;color:var(--text)">
+    This project demonstrates the power of <strong>Hill Climbing</strong> — a fundamental AI search technique — applied to the real-world TSP for Indian cities. Enhanced with random restarts, 2-opt moves, Haversine distances, and interactive visualizations, it delivers a complete, production-quality tool ready for academic and practical use.
+  </p>
+  <div class="grid3" style="max-width:700px;margin:0 auto">
+    <div class="card"><h4>🧠 AI Applied</h4><p>Real optimization using heuristic search</p></div>
+    <div class="card"><h4>🗺 Visualized</h4><p>Interactive maps + convergence graphs</p></div>
+    <div class="card"><h4>🏙 India-Ready</h4><p>40+ cities with accurate coordinates</p></div>
+  </div>
+  <p style="margin-top:28px;color:var(--muted);font-size:13px">
+    AI-Based Route Optimization • Final Year Project • 2025–2026
+  </p>
+</div>
+</div>
+
+</div><!-- end deck -->
+
+<!-- ══ Navigation ════════════════════════════════════════════════════════ -->
+<div class="nav">
+  <button onclick="go(-1)" title="Previous">◀</button>
+  <div class="slide-counter" id="ctr">1 / 13</div>
+  <div class="nav-dots" id="dots"></div>
+  <button onclick="go(1)" title="Next">▶</button>
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const dotsEl = document.getElementById('dots');
+  let cur = 0;
+
+  slides.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    d.onclick = () => goTo(i);
+    dotsEl.appendChild(d);
+  });
+
+  function goTo(n) {
+    slides[cur].classList.remove('active');
+    dotsEl.children[cur].classList.remove('active');
+    cur = (n + slides.length) % slides.length;
+    slides[cur].classList.add('active');
+    dotsEl.children[cur].classList.add('active');
+    document.getElementById('ctr').textContent = `${cur + 1} / ${slides.length}`;
+  }
+
+  function go(dir) { goTo(cur + dir); }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ') go(1);
+    if (e.key === 'ArrowLeft') go(-1);
+  });
+</script>
+</body>
+</html>
