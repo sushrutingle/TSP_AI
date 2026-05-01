@@ -67,7 +67,7 @@ RouteOptimizer/
 
 The application uses **Hill Climbing with 2-opt moves**:
 
-1. Start with a random permutation of cities
+1. Start with a random permutation of cities based on selection
 2. Generate neighbors by swapping cities or reversing segments
 3. Move to the best neighbor that improves total distance
 4. Repeat until no improvement found (local optimum)
